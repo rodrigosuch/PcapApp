@@ -11,13 +11,11 @@
 
 class PCAPLib {
 private:
-  pcap_if_t * psNetStruct;
-  char errbuf[PCAP_ERRBUF_SIZE];
 
 public:
   PCAPLib( void );
   void PCAPInit( void );
-  void PCAPStart( void );
+  void PCAPCaptureStart( void );
 
 /* what an App is */ };
 #endif /* PCAPLIB_H_ */

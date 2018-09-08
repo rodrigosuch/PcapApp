@@ -17,9 +17,9 @@ using namespace std;
 
 int main()
 {
-  pcap_if_t * psNetStruct = NULL;
-  char errbuf[PCAP_ERRBUF_SIZE];
   PCAPLib PCAPInterface;
 
+  PCAPInterface.PCAPInit();
 
+  PCAPInterface.PCAPCaptureStart();
 }
