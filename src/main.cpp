@@ -12,14 +12,16 @@
 #include <iomanip>
 #include <stdio.h>
 #include "PCAPLib.h"
+#include "PacketAnalyzer.h"
 
 using namespace std;
 
 int main()
 {
   PCAPLib PCAPInterface;
+  PacketAnalyzer PacketAnalyzer;
 
   PCAPInterface.PCAPInit();
 
-  PCAPInterface.PCAPCaptureStart();
+  PCAPInterface.PCAPCaptureStart(PacketAnalyzer.PckAnlz_GetPacketReceivedCallback());
 }

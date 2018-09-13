@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netinet/ether.h>
 #include <sys/socket.h>
 #include "PCAPLib.h"
 
@@ -102,6 +103,29 @@ void _pcapPrintInterfaceInfo( pcap_if_t * psInterface )
   }
 }
 
+void _pcapReadInCallback( pcap_t * psPcapDescriptor, pcap_handler pfCallback )
+{
+  pcap_loop ( psPcapDescriptor, -1, pfCallback, NULL );
+}
+
+void _pcapReadInLoop( pcap_t * psPcapDescriptor )
+{
+  pcap_pkthdr Packet;
+  const u_char * packet;
+
+  while(1)
+  {
+    packet = pcap_next (psPcapDescriptor, &Packet);
+    if(Packet.len >0)
+    {
+      cout << endl << Packet.ts.tv_sec << ":" << Packet.ts.tv_usec << " " << Packet.caplen << " Packet size: " << Packet.len << endl;
+
+      for(bpf_u_int32 i=0; i< Packet.len ;++i)
+          cout << setw(2) << setfill('0') << (int)packet[i];
+    }
+  }
+}
+
 PCAPLib::PCAPLib( void )
 {
   psNetStruct = NULL;
@@ -134,10 +158,9 @@ void PCAPLib::PCAPInit( void )
   }
 };
 
-void PCAPLib::PCAPCaptureStart( void )
+void PCAPLib::PCAPCaptureStart( pcap_handler pfCallbackFunction )
 {
   pcap_t *psPcapDescriptor = NULL;
-  const u_char * packet;
 
   if(psNetStruct != NULL)
   {
@@ -146,18 +169,8 @@ void PCAPLib::PCAPCaptureStart( void )
 
   if(psPcapDescriptor != NULL)
   {
-    pcap_pkthdr Packet;
-    while(1)
-    {
-      packet = pcap_next (psPcapDescriptor, &Packet);
-      if(Packet.len >0)
-      {
-        cout << endl << Packet.ts.tv_sec << ":" << Packet.ts.tv_usec << " " << Packet.caplen << " Packet size: " << Packet.len << endl;
-
-        for(bpf_u_int32 i=0; i< Packet.len ;++i)
-            cout << setw(2) << setfill('0') << (int)packet[i];
-      }
-    }
+    //_pcapReadInLoop( psPcapDescriptor );
+    _pcapReadInCallback( psPcapDescriptor, pfCallbackFunction );
   }
   cout << errbuf << endl;
   return;

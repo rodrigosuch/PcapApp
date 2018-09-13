@@ -5,14 +5,17 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/PCAPLib.cpp \
+../src/PacketAnalyzer.cpp \
 ../src/main.cpp 
 
 OBJS += \
 ./src/PCAPLib.o \
+./src/PacketAnalyzer.o \
 ./src/main.o 
 
 CPP_DEPS += \
 ./src/PCAPLib.d \
+./src/PacketAnalyzer.d \
 ./src/main.d 
 
 

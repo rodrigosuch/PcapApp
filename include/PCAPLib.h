@@ -15,7 +15,7 @@ private:
 public:
   PCAPLib( void );
   void PCAPInit( void );
-  void PCAPCaptureStart( void );
+  void PCAPCaptureStart( pcap_handler pfCallbackFunction );
 
 /* what an App is */ };
 #endif /* PCAPLIB_H_ */
