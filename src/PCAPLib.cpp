@@ -18,17 +18,23 @@
 
 using namespace std;
 
+string FileName;
 pcap_if_t * psNetStruct;
 char errbuf[PCAP_ERRBUF_SIZE];
 
-void _pcapPrintAvailableInterfaces( pcap_if_t * psInterface )
+void _pcapPrintAvailableInterfaces( void )
 {
+  pcap_if_t * psLocalNetStruct;
+
+  pcap_findalldevs(&psLocalNetStruct, errbuf);
+  psNetStruct = psLocalNetStruct;
+
   for(int DeviceCounter = 0; ;DeviceCounter++)
   {
-    cout << DeviceCounter << ": " << psInterface->name << endl;
-    if(psInterface->next != NULL)
+    cout << DeviceCounter << ": " << psLocalNetStruct->name << endl;
+    if(psLocalNetStruct->next != NULL)
     {
-      psInterface = psInterface->next;
+      psLocalNetStruct = psLocalNetStruct->next;
     }
     else
     {
@@ -37,13 +43,29 @@ void _pcapPrintAvailableInterfaces( pcap_if_t * psInterface )
   }
 }
 
-int _pcapRequestInterfaceFromUser( pcap_if_t * psInterface )
+bool _pcapRequestOnlineOffline( void )
+{
+  bool SelectedOption;
+
+  cout << "Do you want an online or offline parsing? \r\n(0)Online\r\n(1)Offline" << endl;
+  cin >> SelectedOption;
+
+  return SelectedOption;
+}
+
+void _pcapRequestFileToParse( string * FileName )
+{
+  cout << "Please enter the file name you want to parse" << endl;
+  cin >> *FileName;
+}
+
+int _pcapRequestInterfaceFromUser( void )
 {
   int SelectedInterface;
 
   cout << "Please, select the interface you want to read:" << endl;
 
-  _pcapPrintAvailableInterfaces( psInterface );
+  _pcapPrintAvailableInterfaces();
 
   cin >> SelectedInterface;
 
@@ -78,6 +100,7 @@ void _pcapPrintNetworkAddr(bpf_u_int32 Addr)
   }
   cout << net << endl;
 }
+
 void _pcapPrintInterfaceInfo( pcap_if_t * psInterface )
 {
   bpf_u_int32 NetAddr;
@@ -92,6 +115,7 @@ void _pcapPrintInterfaceInfo( pcap_if_t * psInterface )
     }
     else
     {
+      cout << "Interface Selected --> " << psNetStruct->name << endl;
       cout << "-----------------------------------" << endl;
       cout << "NetworkAddr : ";
       _pcapPrintNetworkAddr( NetAddr );
@@ -100,6 +124,10 @@ void _pcapPrintInterfaceInfo( pcap_if_t * psInterface )
       cout << "-----------------------------------" << endl;
 
     }
+  }
+  else
+  {
+    cout << "Interface Selection ERROR!" << endl;
   }
 }
 
@@ -135,36 +163,52 @@ PCAPLib::PCAPLib( void )
 
 void PCAPLib::PCAPInit( void )
 {
-  pcap_findalldevs(&psNetStruct, errbuf);
 
-  pcap_if_t * psInitialNetStruct = psNetStruct;
-
-  if(psInitialNetStruct != NULL)
-  {
-    int SelectedInterface;
-
-    SelectedInterface = _pcapRequestInterfaceFromUser(psNetStruct);
-
-    psNetStruct = _pcapGetInterfacePerIndex(SelectedInterface, psNetStruct );
-    if(psNetStruct != NULL)
+    // (0 = Online)
+    // (1 = Offline)
+    if( _pcapRequestOnlineOffline() )
     {
-      cout << "Interface Selected --> " << psNetStruct->name << endl;
-      _pcapPrintInterfaceInfo( psNetStruct );
+      // Offline. Get the filename to be read.
+      _pcapRequestFileToParse( &FileName );
     }
     else
     {
-      cout << "Interface Selection ERROR!" << endl;
+      // Online.
+      int SelectedInterface;
+      // Request an interface from user.(Get an index)
+      SelectedInterface = _pcapRequestInterfaceFromUser();
+      // Get a psNetStruct from the index.
+      psNetStruct = _pcapGetInterfacePerIndex(SelectedInterface, psNetStruct );
+      // Print Info about the selected interface.
+      _pcapPrintInterfaceInfo( psNetStruct );
     }
-  }
 };
 
 void PCAPLib::PCAPCaptureStart( pcap_handler pfCallbackFunction )
 {
   pcap_t *psPcapDescriptor = NULL;
 
-  if(psNetStruct != NULL)
+  if(psNetStruct != NULL )
   {
+    // Live Parsing
+    cout << "pcap_open_live()" << endl;
     psPcapDescriptor = pcap_open_live(psNetStruct->name, BUFSIZ,1,100, errbuf);
+    if (psPcapDescriptor == NULL)
+    {
+      cout << "pcap_open_live() failed: " << errbuf << endl;
+      return;
+    }
+  }
+  else
+  {
+    // Parse a file
+    cout << "pcap_open_offline()" << endl;
+    psPcapDescriptor = pcap_open_offline( FileName.c_str(), errbuf);
+    if (psPcapDescriptor == NULL)
+    {
+      cout << "pcap_open_offline() failed: " << errbuf << endl;
+      return;
+    }
   }
 
   if(psPcapDescriptor != NULL)
